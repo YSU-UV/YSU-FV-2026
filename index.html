@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101334" />
+  <title>YSU ROULETTE — 연성대학교 룰렛</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#0d1030; --bg2:#171c52; --line:#8fbaff66; --cyan:#72efff; --pink:#ff71c7; --violet:#b49cff;
+      --ink:#f8fbff; --muted:#b9c4ee; --gold:#fff1a5;
+    }
+    *{box-sizing:border-box}
+    [hidden]{display:none!important}
+    html,body{min-height:100%}
+    body{
+      margin:0; color:var(--ink);
+      font-family:"Trebuchet MS","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+      background:
+        radial-gradient(circle at 14% 18%, #b33eff3c, transparent 28%),
+        radial-gradient(circle at 80% 16%, #2ad8f240, transparent 28%),
+        radial-gradient(circle at 56% 84%, #ff4fb64a, transparent 34%),
+        linear-gradient(180deg,#111541,#0d1030 65%);
+      overflow-x:hidden;
+    }
+    body::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(#ffffff10 1px,transparent 1px),linear-gradient(90deg,#ffffff10 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(transparent,#000 14%,#000 88%,transparent)}
+    body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.07;background:repeating-linear-gradient(to bottom,transparent 0 2px,#000 2px 3px)}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:3px solid #fff4ad;outline-offset:3px}
+
+    .settings-shortcut{
+      position:fixed;top:24px;right:28px;z-index:20;width:54px;height:54px;border:1px solid #9cd7ff80;border-radius:16px;
+      background:linear-gradient(145deg,#31447fab,#282456db);color:#d9f8ff;font-size:27px;
+      box-shadow:inset 0 1px 0 #fff4,0 10px 26px #0005;transition:transform .16s ease,filter .16s ease;
+    }
+    .settings-shortcut:hover{transform:rotate(16deg);filter:brightness(1.06)}
+
+    .stage{
+      min-height:100vh;max-width:1660px;margin:0 auto;padding:86px 28px 52px;
+      display:grid;grid-template-columns:minmax(190px,1fr) minmax(0,760px) minmax(190px,1fr);gap:24px;align-items:center;
+    }
+
+    .odds-panel{
+      grid-column:1;justify-self:end;width:min(100%,290px);
+      padding:22px 20px 23px;border-radius:22px;border:1px solid var(--line);
+      background:linear-gradient(150deg,#26326cdc,#181b48ee 68%,#251d4ff2);
+      box-shadow:0 12px 0 #060925,0 24px 36px #05082470,inset 0 1px 0 #f7fcff30;
+    }
+    .odds-panel header{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-bottom:20px}
+    .odds-panel h2{margin:0;font-size:15px;font-weight:950;letter-spacing:.2px}
+    .total-count{color:var(--cyan);font:900 15px/1 Arial,sans-serif;font-variant-numeric:tabular-nums}
+    .total-count small{margin-left:4px;font-size:11px;color:#abc2eb}
+    .odds-list{display:flex;flex-direction:column;gap:18px}
+    .odds-row{padding:0}
+    .odds-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .prize-name{font-size:14px;font-weight:950;line-height:1.25;overflow-wrap:anywhere;min-width:0;max-width:170px}
+    .prize-odds{font:950 20px/1 Arial,sans-serif;white-space:nowrap;color:#fff;font-variant-numeric:tabular-nums}
+    .odds-track{height:6px;margin:9px 0 7px;border-radius:999px;background:#485188;overflow:hidden}
+    .odds-fill{width:0;height:100%;border-radius:999px;background:#6beffd;transition:width .22s ease}
+    .odds-row[data-index="1"] .odds-fill{background:#ff8bce}
+    .odds-row[data-index="2"] .odds-fill{background:#baa0ff}
+    .odds-row[data-index="3"] .odds-fill{background:#fff0a0}
+    .prize-count{color:#aebce8;font-size:12px;line-height:1.3}
+    .prize-count strong{color:#effbff;font-size:13px;font-variant-numeric:tabular-nums}
+
+    .machine{grid-column:2;min-width:0;width:100%;justify-self:center;position:relative;padding:9px;border-radius:28px;background:linear-gradient(138deg,#fff 0%,#94f7ff 14%,#7d88de 34%,#fff 51%,#ffb3e6 68%,#777bc8 86%,#fff);box-shadow:0 12px 0 #070b2e,0 30px 44px #0008,0 0 50px #71dffd24}
+    .machine-core{border-radius:20px;overflow:hidden;position:relative;background:radial-gradient(ellipse at 50% 2%,#71449458,transparent 60%),linear-gradient(148deg,#1e2a72,#11143d 53%,#21164d 100%);box-shadow:inset 0 0 0 2px #fff7,inset 0 0 35px #02051f}
+    .window-bar{height:31px;padding:0 15px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,#a3f7ff 0%,#a7c2ff 46%,#f8b3e0 100%);border-bottom:2px solid #fff}
+    .window-dots{display:flex;gap:7px}.window-dots span{width:9px;height:9px;border-radius:50%;background:#fa6cae;border:1px solid #fff8}.window-dots span:nth-child(2){background:#ffe38f}.window-dots span:nth-child(3){background:#70eecf}.window-bar-name{font:900 10px/1 Arial,sans-serif;letter-spacing:1.8px;color:#313366}
+
+    .machine-inner{padding:32px 28px 30px;text-align:center}
+    .machine-heading{margin:0 0 24px;font:950 clamp(48px,7vw,92px)/.94 Impact,"Arial Black",sans-serif;letter-spacing:4px;background:linear-gradient(180deg,#fff 4%,#a7f7ff 34%,#5cc5fa 45%,#f5e7ff 56%,#e4a0f7 78%,#b68aff 100%);background-clip:text;-webkit-background-clip:text;color:transparent;filter:drop-shadow(0 6px 0 #58359c) drop-shadow(0 12px 9px #01031a9f)}
+    .machine-heading{font-size:clamp(38px,5.6vw,76px);letter-spacing:2.5px;white-space:nowrap}
+    .window-bar{justify-content:flex-start}
+
+    .slot-frame{padding:10px;border-radius:22px;background:linear-gradient(140deg,#fff 0%,#798ee7 18%,#fff 47%,#8b7acb 72%,#c0f8ff 100%);box-shadow:0 8px 0 #090d32,0 17px 21px #0006,inset 0 0 0 2px #fff}
+    .slot-interior{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;padding:8px;border-radius:14px;background:#131949;box-shadow:inset 0 4px 12px #0009}
+    .reel{position:relative;height:clamp(150px,16vw,210px);border-radius:12px;overflow:hidden;border:2px solid #fff;background:linear-gradient(#afbbea,#f4fcff 20%,#fff 52%,#f3e6ff 82%,#b2b4e3);box-shadow:inset 0 7px 12px #5064a453,inset 0 -7px 13px #ae63a14a}
+    .reel::after{content:"";position:absolute;left:0;right:0;top:50%;margin-top:-1px;border-top:2px solid #fff8;box-shadow:0 0 15px #ef5bc4;pointer-events:none;z-index:2}
+    /* Every reel has one continuous strip; no per-frame image swapping. */
+    .reel::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(to bottom,#707fb875 0%,#b8c5df10 22%,transparent 38%,transparent 62%,#b8a0d81c 80%,#606d9d73 100%)}
+    .reel-track{position:absolute;top:0;left:0;width:100%;display:flex;flex-direction:column;will-change:transform;backface-visibility:hidden;transform:translate3d(0,0,0)}
+    .reel.spinning .reel-track{filter:none}
+    .symbol-cell{display:grid;place-items:center;flex:0 0 auto;width:100%;overflow:hidden}
+    .symbol-art{width:84%;height:90%;max-width:168px;max-height:168px;object-fit:contain;display:block;filter:drop-shadow(0 6px 6px rgba(0,0,0,.16));user-select:none;pointer-events:none}
+
+    .result-zone{height:70px;display:grid;place-items:center;padding-top:14px}
+    .result-name{margin:0;font-size:clamp(17px,2vw,24px);font-weight:950;color:#effbff;overflow-wrap:anywhere}
+    .result-zone[data-type="jackpot"] .result-name{color:var(--gold);text-shadow:0 0 18px #ffe879a0}
+    .result-zone[data-type="triple"] .result-name{color:#ffc0eb}
+    .result-zone[data-type="pair"] .result-name{color:#a3f9ff}
+
+    .play-button{display:block;width:min(320px,100%);margin:0 auto;padding:16px 14px 14px;border-radius:16px;border:2px solid #fff;background:linear-gradient(180deg,#fffac2 0%,#ffbde4 20%,#ff65c5 72%,#e543a6 100%);box-shadow:0 7px 0 #a22b89,0 14px 16px #0008,inset 0 2px 0 #fff;color:#261b60;font:950 24px/1.2 Arial,sans-serif;letter-spacing:2px;transition:transform .13s,filter .13s,box-shadow .13s}
+    .play-button:not(:disabled):hover{filter:brightness(1.07);transform:translateY(-2px)}
+    .play-button:not(:disabled):active{transform:translateY(5px);box-shadow:0 2px 0 #a22b89,0 5px 11px #0008}
+    .play-button:disabled{opacity:.58;cursor:not-allowed}
+
+    .jackpot-flash{animation:jackpot-light .5s ease 3}
+    @keyframes jackpot-light{50%{filter:drop-shadow(0 0 22px #fff3a6) brightness(1.22)}}
+
+    .confetti-layer{position:fixed;inset:0;z-index:15;pointer-events:none;overflow:hidden}
+    .confetti{position:absolute;top:-20px;width:10px;height:18px;border-radius:2px;animation:confetti-fall var(--duration) linear forwards;animation-delay:var(--delay);transform:rotate(var(--rotation))}
+    @keyframes confetti-fall{to{top:110%;transform:translateX(var(--drift)) rotate(1000deg);opacity:.9}}
+
+    .overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:18px;background:#030921d8;backdrop-filter:blur(10px)}
+    .modal{width:min(620px,100%);max-height:90vh;overflow-y:auto;border:5px solid #e9fcff;border-radius:19px;background:#faf7ff;color:#242651;box-shadow:0 0 0 2px #7b64cb,0 25px 80px #000e,0 0 60px #59eaff43}
+    .modal-top{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;background:linear-gradient(90deg,#b2fcff,#c6bfff 58%,#ffb9e3);border-bottom:2px solid #9190d9}
+    .modal-top strong{font-size:16px;font-weight:950}.close-button{width:32px;height:31px;border:2px solid #fff;border-radius:8px;background:#fd6ab2;color:#fff;font-size:21px;line-height:1}
+    .modal-body{padding:13px 19px 17px}
+    .modal-hint{margin:0 0 10px;color:#65698b;font-size:12px;line-height:1.5}
+    .setting-item{padding:9px 0;border-top:1px solid #d9d7eb}
+    .setting-category{font-size:11px;font-weight:900;color:#6a6a9b;margin-bottom:5px}
+    .setting-controls{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:11px;align-items:center}
+    .setting-name-input,.setting-count-input{height:39px;min-width:0;width:100%;border:2px solid #b7b7d9;border-radius:10px;background:#fff;color:#282858;padding:7px 11px;font-size:14px;font-weight:850}
+    .setting-count-input{font:900 17px Arial,sans-serif;text-align:right;font-variant-numeric:tabular-nums}
+    .setting-foot{display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:11px;color:#707497;gap:10px}
+    .setting-chance{color:#3b3d9c;font-weight:950}
+    .sum-row{display:flex;align-items:center;justify-content:space-between;border-radius:10px;background:#e6eaff;padding:10px 13px;margin-top:9px;font-size:13px;font-weight:900}
+    .sum-row strong{font:950 22px Arial,sans-serif;color:#35419b;font-variant-numeric:tabular-nums}
+    .sum-row.invalid{background:#ffe0ed;color:#a12963}
+    .error{min-height:14px;margin:6px 0 0;color:#b51e5d;font-size:12px;font-weight:900}
+    .audio-settings{margin:10px 0 12px;padding:10px 12px 9px;border-radius:13px;background:linear-gradient(115deg,#ecfaff,#f6edff);border:1px solid #c8cae9}
+    .audio-settings-title{font-size:12px;font-weight:950;color:#363b7b;margin-bottom:4px}
+    .audio-line{display:grid;grid-template-columns:116px 1fr;gap:10px;align-items:center;margin-top:6px}
+    .audio-line button{height:33px;text-align:center;white-space:nowrap}
+    .audio-volume{min-width:0;display:flex;align-items:center;gap:9px}.audio-volume input{width:100%;accent-color:#b43caf;cursor:pointer}.audio-volume output{min-width:37px;text-align:right;color:#5b5a8d;font-size:12px;font-weight:850;font-variant-numeric:tabular-nums}
+    .audio-line button[aria-pressed="false"]{background:#e9e6f2;color:#84829b}
+    .audio-note{font-size:11px;color:#70769a;margin-top:6px;line-height:1.45}
+    .sfx-preview{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid #d6d8ec}
+    .sfx-preview-label{font-size:11px;color:#535c90;font-weight:950;margin-right:4px}
+    .preview-sound{padding:7px 11px;border:1px solid #bdbee2;border-radius:9px;background:#fff;color:#393a7a;font-size:11px;font-weight:950;transition:background .15s,transform .15s}
+    .preview-sound:hover{background:#e5eaff;transform:translateY(-1px)}
+    .preview-sound[data-rank="1"]{border-color:#ebbc45;background:#fff2bf;color:#6d4c0b}
+    .preview-sound:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+    .modal-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:5px}
+    .settings-utilities{display:flex;gap:8px}
+    .secondary-button{padding:9px 12px;border:1px solid #b9b5d3;border-radius:9px;color:#565686;background:#fff;font-size:12px;font-weight:900}
+    .save-button{padding:11px 23px;border:1px solid #f44da7;border-radius:10px;color:#332057;background:linear-gradient(#ffc5e4,#ff70bb);font-size:14px;font-weight:950;box-shadow:0 3px 0 #d24898}.save-button:disabled{opacity:.48;cursor:not-allowed}
+
+    @media (max-width:1250px){
+      .slot-interior{gap:8px}.reel{height:170px}.symbol-art{max-width:148px}.machine-inner{padding:30px 22px 28px}
+    }
+    @media (max-width:1080px){
+      .stage{grid-template-columns:225px minmax(0,1fr);gap:20px;padding:84px 20px 44px}
+      .odds-panel{grid-column:1;width:100%;justify-self:stretch}
+      .machine{grid-column:2;max-width:760px}
+    }
+    @media (max-width:750px){
+      .stage{grid-template-columns:1fr;gap:23px;padding:80px 16px 32px}
+      .odds-panel{grid-column:1;grid-row:2;max-width:620px;width:100%;justify-self:center}
+      .machine{grid-column:1;grid-row:1;max-width:620px;justify-self:center}
+      .odds-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+    }
+    @media (max-width:720px){
+      .settings-shortcut{top:14px;right:16px;width:45px;height:45px;font-size:23px}
+      .stage{padding:74px 10px 26px}.machine{padding:6px;border-radius:18px}.machine-core{border-radius:12px}.machine-inner{padding:22px 12px 22px}.machine-heading{font-size:clamp(27px,7vw,48px);letter-spacing:1px;margin-bottom:18px}.slot-frame{padding:6px;border-radius:15px}.slot-interior{gap:4px;padding:5px}.reel{height:clamp(125px,30vw,176px);border-radius:8px}.symbol-art{max-width:148px}.result-zone{height:64px}.play-button{font-size:20px;padding:14px 8px 13px}.odds-list{gap:14px}.prize-name{font-size:12px}.prize-odds{font-size:16px}.modal-body{padding:16px 13px 19px}.setting-controls{grid-template-columns:minmax(0,1fr) 96px;gap:7px}.settings-utilities{gap:5px}.secondary-button{padding:8px}
+    }
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <button class="settings-shortcut" id="settingsButton" type="button" aria-label="설정 열기" title="설정">⚙</button>
+  <main class="stage">
+    <aside class="odds-panel" aria-labelledby="oddsHeading">
+      <header><h2 id="oddsHeading">남은 상품</h2><div class="total-count"><span id="totalRemaining">0</span><small>회</small></div></header>
+      <div class="odds-list" id="oddsList" aria-live="polite"></div>
+    </aside>
+
+    <section class="machine" aria-label="3칸 슬롯머신, 심볼 6종">
+      <div class="machine-core" id="machineCore">
+        <div class="window-bar"><div class="window-dots" aria-hidden="true"><span></span><span></span><span></span></div></div>
+        <div class="machine-inner">
+          <h1 class="machine-heading">YSU ROULETTE</h1>
+          <div class="slot-frame">
+            <div class="slot-interior" id="slotInterior" role="group" aria-label="세 개의 슬롯, 각 슬롯에 여섯 종류의 심볼"></div>
+          </div>
+          <div class="result-zone" id="resultZone" data-type="idle" role="status" aria-live="polite" aria-atomic="true"><p id="resultTitle" class="result-name"></p></div>
+          <button class="play-button" type="button" id="playButton"><span id="playButtonText">ENTER ↵</span></button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+
+  <div class="overlay" id="settingsOverlay" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsHeading">
+      <div class="modal-top"><strong id="settingsHeading">⚙ 상품 설정</strong><button id="closeSettingsButton" class="close-button" type="button" aria-label="설정 닫기">×</button></div>
+      <div class="modal-body">
+        <p class="modal-hint">상품 이름과 남은 횟수를 입력하면 확률이 자동 계산됩니다.</p>
+        <div id="settingsList"></div>
+        <div class="sum-row" id="sumRow"><span>총 남은 횟수</span><strong id="settingsTotal">0회</strong></div>
+        <p class="error" id="settingsError" role="alert"></p>
+
+        <div class="audio-settings" aria-label="음악과 효과음 설정">
+          <div class="audio-settings-title">♫ 사운드</div>
+          <div class="audio-line">
+            <button class="secondary-button" type="button" id="bgmButton" aria-pressed="true">BGM 켜짐</button>
+            <label class="audio-volume" for="bgmVolume"><input id="bgmVolume" type="range" min="0" max="100" step="5" value="35" aria-label="배경음악 볼륨"><output id="bgmVolumeValue" for="bgmVolume">35%</output></label>
+          </div>
+          <div class="audio-line">
+            <button class="secondary-button" type="button" id="sfxButton" aria-pressed="true">효과음 켜짐</button>
+            <label class="audio-volume" for="sfxVolume"><input id="sfxVolume" type="range" min="0" max="100" step="5" value="65" aria-label="효과음 볼륨"><output id="sfxVolumeValue" for="sfxVolume">65%</output></label>
+          </div>
+          <div class="audio-line">
+            <label class="audio-settings-title" for="spinDuration">릴 회전 시간</label>
+            <label class="audio-volume" for="spinDuration"><input id="spinDuration" type="range" min="3" max="6" step="0.25" value="4.25" aria-label="릴 회전 시간"><output id="spinDurationValue" for="spinDuration">4.25초</output></label>
+          </div>
+          <div class="sfx-preview" role="group" aria-label="효과음 미리듣기">
+            <span class="sfx-preview-label">소리 미리듣기</span>
+            <button class="preview-sound" type="button" data-sound="reel-start">회전</button>
+            <button class="preview-sound" type="button" data-sound="prize-1" data-rank="1">1등</button>
+            <button class="preview-sound" type="button" data-sound="prize-2" data-rank="2">2등</button>
+            <button class="preview-sound" type="button" data-sound="prize-3" data-rank="3">3등</button>
+            <button class="preview-sound" type="button" data-sound="prize-4" data-rank="4">4등</button>
+          </div>
+          <div class="audio-note">회전 중 기계음 · 릴 정지음 · 등수별 당첨음이 재생됩니다. 미리듣기는 상품 수량에 영향을 주지 않습니다.</div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="settings-utilities"><button class="secondary-button" type="button" id="fullscreenButton">전체 화면</button></div>
+          <button class="save-button" type="button" id="saveSettingsButton">저장</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <audio id="bgmAudio" preload="auto" loop src="y2k-arcade-loop.ogg"></audio>
+
+  <script>
+    (() => {
+      'use strict';
+      const $ = id => document.getElementById(id);
+      const STOCK_KEY = 'sevenClub.prizeStock.v4';
+      const NAMES_KEY = 'sevenClub.prizeNames.v4';
+      const AUDIO_KEY = 'sevenClub.audio.v2';
+      const SPIN_KEY = 'sevenClub.spinDuration.v1';
+      const MAX_COUNT = 1000000;
+      const REEL_COUNT = 3;
+      const SYMBOLS = [
+        { id:'ysu', label:'연성대', src:'assets/symbol-ysu.png' },
+        { id:'blocks', label:'도형', src:'assets/symbol-blocks.png' },
+        { id:'pochita', label:'포치타', src:'assets/symbol-pochita.png' },
+        { id:'penguin', label:'펭귄', src:'assets/symbol-penguin.png' },
+        { id:'kirby', label:'커비', src:'assets/symbol-kirby.png' },
+        { id:'rabbit', label:'토끼', src:'assets/symbol-rabbit.png' }
+      ];
+      const jackpotIndex = SYMBOLS.findIndex(s => s.id === 'ysu');
+      const CATEGORIES = ['4등 · 전부 다름','3등 · 2개 일치','2등 · 3개 일치','1등 · 연성대 로고 일치'];
+      const CATEGORY_HINTS = [
+        '3칸의 심볼이 모두 다름',
+        '3칸 중 두 칸이 일치',
+        '3칸 모두 일치 (연성대 로고 제외)',
+        '연성대 로고 × 3'
+      ];
+      const DEFAULT_NAMES = ['기본 사은품','중간 상품','상급 상품','YSU 특별 상품'];
+      const DEFAULT_COUNTS = [50, 35, 14, 1];
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const reels = [];
+      let lastFocus = null;
+      let isSpinning = false;
+      let userHasInteracted = false;
+      // The seven effects below are original, fully-offline audio assets.
+      const SOUND_PATH = 'sounds/';
+      const SOUND_FILES = ['reel-start','reel-roll','reel-stop','prize-1','prize-2','prize-3','prize-4'];
+      const soundPlayers = Object.fromEntries(SOUND_FILES.map(name => {
+        const audio = new Audio(`${SOUND_PATH}${name}.ogg`);
+        audio.preload = 'auto';
+        audio.loop = name === 'reel-roll';
+        return [name, audio];
+      }));
+      const SOUND_DURATION = { 'reel-start':600,'prize-1':4600,'prize-2':2400,'prize-3':1500,'prize-4':1000 };
+      let bgmDuck = 1;
+      let bgmRestoreTimer = null;
+      let rollingLevel = .78;
+
+      const safeGet = (key, fallback) => {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      };
+      const safeSet = (key, value) => {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+      };
+      const validCounts = counts => Array.isArray(counts) && counts.length === 4 && counts.every(v => Number.isInteger(v) && v >= 0 && v <= MAX_COUNT);
+      const validNames = names => Array.isArray(names) && names.length === 4 && names.every(v => typeof v === 'string' && v.trim().length > 0 && v.trim().length <= 24);
+      const totalRemaining = (counts) => counts.reduce((sum, value) => sum + value, 0);
+      const pct = value => `${(value * 100).toFixed(value > 0 && value < 0.001 ? 3 : value > 0 && value < 0.01 ? 2 : 1)}%`;
+      const randomInt = max => Math.floor(Math.random() * max);
+      const shuffle = arr => {
+        const copy = arr.slice();
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = randomInt(i + 1);
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      };
+      const pickN = (pool, count) => shuffle(pool).slice(0, count);
+
+      let remaining = safeGet(STOCK_KEY, DEFAULT_COUNTS);
+      if (!validCounts(remaining)) remaining = DEFAULT_COUNTS.slice();
+      let names = safeGet(NAMES_KEY, DEFAULT_NAMES);
+      if (!validNames(names)) names = DEFAULT_NAMES.slice();
+      // Upgrade only the previous untouched default label, preserving customized prize names.
+      if (names[3] === '777 특별 상품') {
+        names[3] = 'YSU 특별 상품';
+        safeSet(NAMES_KEY, names);
+      }
+
+      let audioPrefs = Object.assign({ bgmOn:true, sfxOn:true, bgmVolume:.35, sfxVolume:.65 }, safeGet(AUDIO_KEY, {}));
+      let spinDuration = safeGet(SPIN_KEY, 4.25);
+      if (!Number.isFinite(spinDuration) || spinDuration < 3 || spinDuration > 6) spinDuration = 4.25;
+      // Warm image cache before the first spin. All images are bundled locally.
+      SYMBOLS.forEach(sym => { const image = new Image(); image.src = sym.src; });
+
+      function currentOdds(counts = remaining) {
+        const total = totalRemaining(counts);
+        return counts.map(v => total > 0 ? v / total : 0);
+      }
+
+      function symbolImage(index, className = 'symbol-art') {
+        const sym = SYMBOLS[index];
+        const img = document.createElement('img');
+        img.className = className;
+        img.src = sym.src;
+        img.alt = sym.label;
+        img.draggable = false;
+        return img;
+      }
+
+      // The strip is [previous symbol, current symbol, next symbol, ...].
+      // Each item occupies 84% of the window, so adjacent symbols peek in.
+      function makeStrip(index, count, rowHeight) {
+        const fragment = document.createDocumentFragment();
+        const length = SYMBOLS.length;
+        for (let step = -1; step <= count + 1; step++) {
+          const item = document.createElement('div');
+          item.className = 'symbol-cell';
+          item.style.height = `${rowHeight}px`;
+          item.append(symbolImage((index + step + length * 50) % length));
+          fragment.append(item);
+        }
+        return fragment;
+      }
+
+      function stripGeometry(reel) {
+        const height = reel.reel.clientHeight;
+        const rowHeight = Math.round(height * 0.84);
+        const initialY = (height - rowHeight) / 2 - rowHeight;
+        return { rowHeight, initialY };
+      }
+
+      function renderRestingReel(i, symbol) {
+        const r = reels[i];
+        const { rowHeight, initialY } = stripGeometry(r);
+        r.track.replaceChildren(makeStrip(symbol, 0, rowHeight));
+        r.track.style.transform = `translate3d(0,${initialY}px,0)`;
+        r.current = symbol;
+      }
+
+      function buildReels() {
+        const host = $('slotInterior');
+        host.replaceChildren();
+        for (let i = 0; i < REEL_COUNT; i++) {
+          const reel = document.createElement('div');
+          reel.className = 'reel';
+          reel.id = `reel${i}`;
+          const track = document.createElement('div');
+          track.className = 'reel-track';
+          reel.append(track);
+          host.append(reel);
+          reels.push({ reel, track, current: i % SYMBOLS.length });
+        }
+      }
+
+      function setSymbols(indices) {
+        indices.forEach((sym, i) => renderRestingReel(i, sym));
+      }
+
+      function animateReel(i, targetSymbol, durationMs) {
+        const r = reels[i];
+        const { rowHeight, initialY } = stripGeometry(r);
+        const delta = (targetSymbol - r.current + SYMBOLS.length) % SYMBOLS.length;
+        // Each column completes several continuous six-symbol revolutions.
+        const revolutions = reducedMotion ? 1 : (i === 0 ? 5 : i === 1 ? 6 : 7);
+        const steps = revolutions * SYMBOLS.length + delta;
+        r.track.replaceChildren(makeStrip(r.current, steps, rowHeight));
+        r.track.style.transform = `translate3d(0,${initialY}px,0)`;
+        r.reel.classList.add('spinning');
+        const endY = initialY - steps * rowHeight;
+        const accelerateSteps = Math.max(1, Math.round(steps * 0.08));
+        const brakingSteps = Math.max(3, Math.round(steps * 0.18));
+        const from = `translate3d(0,${initialY}px,0)`;
+        const accel = `translate3d(0,${initialY - accelerateSteps * rowHeight}px,0)`;
+        const brake = `translate3d(0,${endY + brakingSteps * rowHeight}px,0)`;
+        const finishAt = `translate3d(0,${endY}px,0)`;
+        const animation = r.track.animate([
+          { transform: from, offset: 0, easing: 'cubic-bezier(.52,0,.8,.8)' },
+          { transform: accel, offset: .10, easing: 'linear' },
+          { transform: brake, offset: .72, easing: 'cubic-bezier(.16,.72,.2,1)' },
+          { transform: finishAt, offset: 1 }
+        ], { duration: durationMs, fill: 'forwards', iterations: 1 });
+        return animation.finished.then(() => {
+          // Swap the long strip for a centered 3-symbol strip in the same frame.
+          // The final visible result does not change, avoiding a visual flash.
+          renderRestingReel(i, targetSymbol);
+          animation.cancel();
+          r.reel.classList.remove('spinning');
+          reelLockSound(i);
+        });
+      }
+
+      // Every arrangement within a category is equally likely.
+      // all different: 6*5*4 = 120, pair: 6*5*3 = 90,
+      // non-logo triple: 5, matching YSU logos: 1.
+      function generatePattern(type) {
+        if (type === 0) return pickN(SYMBOLS.map((_, i) => i), REEL_COUNT);
+        if (type === 1) {
+          const pair = randomInt(SYMBOLS.length);
+          const otherPool = SYMBOLS.map((_, i) => i).filter(i => i !== pair);
+          const other = otherPool[randomInt(otherPool.length)];
+          return shuffle([pair, pair, other]);
+        }
+        if (type === 2) {
+          const nonLogo = SYMBOLS.map((_, i) => i).filter(i => i !== jackpotIndex);
+          const triple = nonLogo[randomInt(nonLogo.length)];
+          return [triple, triple, triple];
+        }
+        return [jackpotIndex, jackpotIndex, jackpotIndex];
+      }
+
+      function pickCategory() {
+        const total = totalRemaining(remaining);
+        if (total <= 0) return -1;
+        let roll = Math.random() * total;
+        for (let i = 0; i < remaining.length; i++) {
+          roll -= remaining[i];
+          if (roll < 0) return i;
+        }
+        return remaining.length - 1;
+      }
+
+      function pickResult() {
+        const type = pickCategory();
+        if (type < 0) return null;
+        return { type, symbols: generatePattern(type) };
+      }
+
+      function renderOdds() {
+        const host = $('oddsList');
+        host.replaceChildren();
+        const odds = currentOdds();
+        $('totalRemaining').textContent = totalRemaining(remaining).toLocaleString('ko-KR');
+        for (let i = 0; i < 4; i++) {
+          const row = document.createElement('div');
+          row.className = 'odds-row';
+          row.dataset.index = String(i);
+          row.innerHTML = `
+            <div class="odds-head"><div class="prize-name"></div><div class="prize-odds"></div></div>
+            <div class="odds-track"><div class="odds-fill"></div></div>
+            <div class="prize-count"><strong></strong> 남음</div>`;
+          row.querySelector('.prize-name').textContent = names[i];
+          row.querySelector('.prize-odds').textContent = pct(odds[i]);
+          row.querySelector('.odds-fill').style.width = `${odds[i] * 100}%`;
+          row.querySelector('.prize-count strong').textContent = `${remaining[i].toLocaleString('ko-KR')}회`;
+          host.append(row);
+        }
+      }
+
+      function showResult(kind, text) {
+        $('resultZone').dataset.type = kind;
+        $('resultTitle').textContent = text;
+        $('playButtonText').textContent = isSpinning ? '···' : 'ENTER ↵';
+        $('playButton').disabled = isSpinning || totalRemaining(remaining) <= 0;
+      }
+
+      function updateAudioControls() {
+        $('bgmButton').textContent = audioPrefs.bgmOn ? 'BGM 켜짐' : 'BGM 꺼짐';
+        $('bgmButton').setAttribute('aria-pressed', String(audioPrefs.bgmOn));
+        $('sfxButton').textContent = audioPrefs.sfxOn ? '효과음 켜짐' : '효과음 꺼짐';
+        $('sfxButton').setAttribute('aria-pressed', String(audioPrefs.sfxOn));
+        $('bgmVolume').value = String(Math.round(audioPrefs.bgmVolume * 100));
+        $('bgmVolumeValue').value = `${Math.round(audioPrefs.bgmVolume * 100)}%`;
+        $('sfxVolume').value = String(Math.round(audioPrefs.sfxVolume * 100));
+        $('sfxVolumeValue').value = `${Math.round(audioPrefs.sfxVolume * 100)}%`;
+        applyBgmVolume();
+        $('sfxButton').disabled = false;
+        document.querySelectorAll('.preview-sound').forEach(button => button.disabled = !audioPrefs.sfxOn);
+        soundPlayers['reel-roll'].volume = audioPrefs.sfxOn ? audioPrefs.sfxVolume * rollingLevel : 0;
+        for (const [name, audio] of Object.entries(soundPlayers)) {
+          if (name !== 'reel-roll') audio.volume = audioPrefs.sfxOn ? audioPrefs.sfxVolume : 0;
+        }
+      }
+      function saveAudioPrefs(){ safeSet(AUDIO_KEY, audioPrefs); }
+      function startBgm() {
+        userHasInteracted = true;
+        if (!audioPrefs.bgmOn) return;
+        const audio = $('bgmAudio');
+        applyBgmVolume();
+        audio.play().catch(() => {});
+      }
+      function stopBgm(){ $('bgmAudio').pause(); }
+      function applyBgmVolume() {
+        $('bgmAudio').volume = audioPrefs.bgmOn ? Math.min(1,audioPrefs.bgmVolume * bgmDuck) : 0;
+      }
+      // Lower the BGM temporarily so results and mechanical sounds stay audible.
+      function duckBgm(level, duration = 0) {
+        clearTimeout(bgmRestoreTimer);
+        bgmDuck = level;
+        applyBgmVolume();
+        if (duration > 0) bgmRestoreTimer = setTimeout(() => {
+          bgmDuck = 1; applyBgmVolume();
+        }, duration);
+      }
+      function playSound(name, volumeFactor = 1) {
+        if (!audioPrefs.sfxOn || audioPrefs.sfxVolume <= 0) return;
+        const sound = soundPlayers[name];
+        if (!sound) return;
+        try {
+          sound.pause(); sound.currentTime = 0;
+          sound.volume = Math.min(1, audioPrefs.sfxVolume * volumeFactor);
+          sound.play().catch(() => {});
+        } catch {}
+      }
+      function stopAllEffects() {
+        for (const sound of Object.values(soundPlayers)) {
+          sound.pause();
+          try { sound.currentTime = 0; } catch {}
+        }
+      }
+      function stopRolling() {
+        soundPlayers['reel-roll'].pause();
+        try { soundPlayers['reel-roll'].currentTime = 0; } catch {}
+      }
+      function startRolling() {
+        if (!audioPrefs.sfxOn || audioPrefs.sfxVolume <= 0) return;
+        rollingLevel = .78;
+        playSound('reel-roll', rollingLevel);
+      }
+      function reelLockSound(i) {
+        playSound('reel-stop', .94 + i * .02);
+        // So the remaining moving reels feel slower and heavier.
+        rollingLevel = Math.max(.27, .78 - (i + 1) * .16);
+        soundPlayers['reel-roll'].volume = audioPrefs.sfxOn ? audioPrefs.sfxVolume * rollingLevel : 0;
+      }
+      function winSound(type) {
+        const rank = 4 - type; // three YSU logos=1st, other triple=2nd, pair=3rd, all different=4th
+        duckBgm(type === 3 ? .19 : type === 2 ? .30 : .50, SOUND_DURATION['prize-' + rank] + 350);
+        playSound('prize-' + rank);
+      }
+      function confetti() {
+        const layer = $('confettiLayer'); layer.replaceChildren();
+        const colors = ['#5cf3ff','#ff72c6','#fff2a2','#b7a4ff','#ffffff'];
+        for (let i = 0; i < 90; i++) {
+          const piece = document.createElement('span'); piece.className = 'confetti';
+          piece.style.cssText = `left:${randomInt(10000)/100}%;background:${colors[randomInt(colors.length)]};--duration:${2+randomInt(220)/100}s;--delay:${randomInt(55)/100}s;--drift:${randomInt(401)-200}px;--rotation:${randomInt(361)}deg`;
+          layer.append(piece);
+        }
+        setTimeout(() => layer.replaceChildren(), 4100);
+      }
+
+      function finish(result) {
+        isSpinning = false;
+        renderOdds();
+        const typeName = ['none','pair','triple','jackpot'][result.type];
+        showResult(typeName, names[result.type]);
+        stopRolling();
+        winSound(result.type);
+        if (result.type === 3) {
+          confetti();
+          $('machineCore').classList.remove('jackpot-flash');
+          void $('machineCore').offsetWidth;
+          $('machineCore').classList.add('jackpot-flash');
+        }
+      }
+
+      function spin() {
+        if (isSpinning || !$('settingsOverlay').hidden) return;
+        const result = pickResult();
+        if (!result) {
+          renderOdds();
+          showResult('idle', '모든 수량 소진');
+          return;
+        }
+        remaining[result.type] -= 1;
+        safeSet(STOCK_KEY, remaining);
+        isSpinning = true;
+        renderOdds();
+        $('confettiLayer').replaceChildren();
+        $('machineCore').classList.remove('jackpot-flash');
+        $('playButton').disabled = true;
+        showResult('spinning', '');
+        startBgm();
+
+        duckBgm(.48);
+        stopAllEffects();
+        playSound('reel-start');
+        startRolling();
+        const lastStopMs = reducedMotion ? 500 : spinDuration * 1000;
+        const times = [lastStopMs * .64, lastStopMs * .82, lastStopMs];
+        // Result and stock are fixed before the animation begins.
+        // Three reels descend smoothly and stop one after another.
+        Promise.all(reels.map((_, i) => animateReel(i, result.symbols[i], times[i])))
+          .then(() => finish(result))
+          .catch(() => {
+            stopRolling();
+            setSymbols(result.symbols);
+            reels.forEach(r => r.reel.classList.remove('spinning'));
+            finish(result);
+          });
+      }
+
+      function createSettingsFields() {
+        const list = $('settingsList'); list.replaceChildren();
+        const odds = currentOdds();
+        for (let i = 0; i < 4; i++) {
+          const item = document.createElement('div');
+          item.className = 'setting-item';
+          item.innerHTML = `
+            <div class="setting-category">${CATEGORIES[i]} · ${CATEGORY_HINTS[i]}</div>
+            <div class="setting-controls">
+              <input class="setting-name-input" type="text" maxlength="24" id="name${i}" autocomplete="off" aria-label="${CATEGORIES[i]} 상품 이름" />
+              <input class="setting-count-input" type="number" min="0" max="${MAX_COUNT}" step="1" inputmode="numeric" id="stock${i}" aria-label="${CATEGORIES[i]} 남은 횟수" />
+            </div>
+            <div class="setting-foot"><span>상품 이름 / 남은 횟수</span><span>확률 <strong class="setting-chance" id="chance${i}">${pct(odds[i])}</strong></span></div>`;
+          list.append(item);
+          $('name' + i).value = names[i];
+          $('stock' + i).value = remaining[i];
+        }
+        list.querySelectorAll('input').forEach(input => input.addEventListener('input', validateDraft));
+      }
+      const draftCounts = () => [0,1,2,3].map(i => {
+        const s = $('stock' + i).value.trim();
+        return s === '' ? NaN : Number(s);
+      });
+      const draftNames = () => [0,1,2,3].map(i => $('name' + i).value.trim());
+      function validateDraft() {
+        const counts = draftCounts(); const newNames = draftNames();
+        const valid = validCounts(counts) && validNames(newNames);
+        $('saveSettingsButton').disabled = !valid;
+        $('sumRow').classList.toggle('invalid', !valid);
+        $('settingsTotal').textContent = valid ? totalRemaining(counts).toLocaleString('ko-KR') + '회' : '—';
+        $('settingsError').textContent = valid ? '' : '상품명을 입력하고 남은 횟수를 0~1,000,000 사이의 정수로 설정하세요.';
+        const odds = valid ? currentOdds(counts) : null;
+        for (let i = 0; i < 4; i++) $('chance' + i).textContent = odds ? pct(odds[i]) : '—';
+        return valid;
+      }
+      function openSettings(){ if (isSpinning) return; lastFocus = document.activeElement; createSettingsFields(); $('settingsOverlay').hidden = false; validateDraft(); $('name0').focus(); }
+      function closeSettings(){ $('settingsOverlay').hidden = true; if (lastFocus?.focus) lastFocus.focus(); }
+      function saveSettings(){
+        if (!validateDraft()) return;
+        remaining = draftCounts(); names = draftNames();
+        safeSet(STOCK_KEY, remaining); safeSet(NAMES_KEY, names);
+        renderOdds(); closeSettings();
+        if (totalRemaining(remaining) === 0) showResult('idle', '모든 수량 소진');
+        else if ($('resultTitle').textContent === '모든 수량 소진') showResult('idle', '');
+      }
+      async function toggleFullscreen(){
+        try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch {}
+      }
+
+      $('playButton').addEventListener('click', spin);
+      $('settingsButton').addEventListener('click', openSettings);
+      $('closeSettingsButton').addEventListener('click', closeSettings);
+      $('saveSettingsButton').addEventListener('click', saveSettings);
+      $('settingsOverlay').addEventListener('click', e => { if (e.target === $('settingsOverlay')) closeSettings(); });
+      $('bgmButton').addEventListener('click', () => { audioPrefs.bgmOn = !audioPrefs.bgmOn; saveAudioPrefs(); updateAudioControls(); if (audioPrefs.bgmOn) startBgm(); else stopBgm(); });
+      $('sfxButton').addEventListener('click', () => {
+        audioPrefs.sfxOn = !audioPrefs.sfxOn;
+        saveAudioPrefs();
+        if (!audioPrefs.sfxOn) stopAllEffects();
+        updateAudioControls();
+        if (audioPrefs.sfxOn) {
+          if (isSpinning) startRolling();
+          else playSound('reel-start');
+        }
+      });
+      document.querySelectorAll('.preview-sound').forEach(button => button.addEventListener('click', () => {
+        if (!audioPrefs.sfxOn) return;
+        const name = button.dataset.sound;
+        if (name === 'reel-start') {
+          duckBgm(.45, 1100);
+          playSound('reel-start');
+        } else {
+          const duration = SOUND_DURATION[name] || 1500;
+          duckBgm(name === 'prize-1' ? .19 : .36, duration + 200);
+          // Prevent multiple jingles from clashing when buttons are clicked in succession.
+          for (const [key,audio] of Object.entries(soundPlayers)) {
+            if (key.startsWith('prize-')) { audio.pause(); try { audio.currentTime = 0; } catch {} }
+          }
+          playSound(name);
+        }
+      }));
+      $('bgmVolume').addEventListener('input', e => { audioPrefs.bgmVolume = Number(e.target.value) / 100; saveAudioPrefs(); updateAudioControls(); if (audioPrefs.bgmOn) startBgm(); });
+      $('sfxVolume').addEventListener('input', e => { audioPrefs.sfxVolume = Number(e.target.value) / 100; saveAudioPrefs(); updateAudioControls(); });
+      $('spinDuration').value = String(spinDuration);
+      $('spinDurationValue').textContent = `${spinDuration.toFixed(2).replace(/0$/, '').replace(/\.$/, '')}초`;
+      $('spinDuration').addEventListener('input', e => {
+        spinDuration = Number(e.target.value);
+        safeSet(SPIN_KEY, spinDuration);
+        $('spinDurationValue').textContent = `${spinDuration.toFixed(2).replace(/0$/, '').replace(/\.$/, '')}초`;
+      });
+      $('fullscreenButton').addEventListener('click', toggleFullscreen);
+
+      document.addEventListener('pointerdown', startBgm, { passive:true });
+      document.addEventListener('keydown', e => { if (!e.repeat && !e.isComposing) startBgm(); });
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { stopBgm(); stopRolling(); }
+        else if (userHasInteracted) { startBgm(); if (isSpinning) startRolling(); }
+      });
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !$('settingsOverlay').hidden) { e.preventDefault(); closeSettings(); return; }
+        if (e.code === 'KeyF' && $('settingsOverlay').hidden && !e.repeat && !e.ctrlKey && !e.altKey && !e.metaKey && !e.target.closest('input,textarea,select,[contenteditable="true"]')) { e.preventDefault(); toggleFullscreen(); return; }
+        if (e.key !== 'Enter' && e.code !== 'NumpadEnter') return;
+        if (e.repeat || e.isComposing) return;
+        if (!$('settingsOverlay').hidden) { e.preventDefault(); return; }
+        if (e.target.closest('input,textarea,select,[contenteditable="true"]')) return;
+        e.preventDefault(); spin();
+      });
+      window.addEventListener('storage', e => {
+        if (e.key === STOCK_KEY) { const next = safeGet(STOCK_KEY, remaining); if (validCounts(next)) remaining = next; renderOdds(); }
+        if (e.key === NAMES_KEY) { const next = safeGet(NAMES_KEY, names); if (validNames(next)) names = next; renderOdds(); }
+      });
+
+      buildReels();
+      updateAudioControls();
+      renderOdds();
+      setSymbols([0,1,2]);
+      if (totalRemaining(remaining) === 0) showResult('idle', '모든 수량 소진');
+      else showResult('idle', '');
+    })();
+  </script>
+</body>
+</html>
